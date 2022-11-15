@@ -3,13 +3,14 @@ const mongoose = require('mongoose')
 const UserSchema = mongoose.Schema({
     name: String,
     cash: Number,
-    bascket: {
-        medicaments: [{
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'Medicament'
-        }],
-        totalPrice: Number
-    }
+    totalPrice: {
+        type:Number,
+        default: 0
+    },
+    bascket: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Medicament'
+    }],
 })
 
 const User = mongoose.model('User', UserSchema)

@@ -57,19 +57,29 @@ module.exports.usersController = {
             const user = await User.findById(req.params.userId)
             const drug = await Medicament.findById(req.body.drug)
             if (!drug.saleWithoutRecipe) {
-                return res.json("Данное лекарство не продается без рецепта")
+                return res.json("ДАННОЕ ЛЕКАРСТВО НЕ ПРОДАЕТСЯ БЕЗ РЕЦЕПТА")
             }
-            await User.findByIdAndUpdate(req.params.id, {
-                $addToSet: { medicaments: drug }
-            }, { new: true }).populate({ path: "bascket.medicaments" })
-            // let defaultTotal = await user.bascket.totalPrice
-            let endTotal = await user.bascket.medicaments.reduce((acc, med) => {
-                acc += med.price
+            await User.findByIdAndUpdate(req.params.userId, {
+                $addToSet: { bascket: drug }
+            }, { new: true }).populate('bascket')
+
+            // const a = await User.findByIdAndUpdate(req.params.userId, {
+            //     $set: {
+            //         totalPrice: bascket.reduce((acc, item) => {
+            //             return acc + item.price
+            //         })
+            //     }
+            // }, { new: true }
+            // )
+            // console.log(a)
+
+            user.totalPrice = await user.bascket.reduce((acc, item) => {
+                acc + item.price
             }, 0)
-            // defaultTotal = endTotal
-            user.bascket.totalPrice = endTotal
+            console.log(user.totalPrice)
+            // user.totalPrice = endTotal
             // ПОЧЕМУ НЕЛЬЗЯ СТАВИТЬ await ПЕРЕД ПЕРЕЗАПИСЫВАНИЕМ
-            res.json("Лекарство добавлено в корзину")
+            await res.json("ЛЕКАРСТВО ДОБАВЛЕНО В КОРЗИНУ")
         } catch (error) {
             res.json(error)
         }

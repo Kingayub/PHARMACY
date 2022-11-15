@@ -8,5 +8,5 @@ mongoose.connect("mongodb+srv://Ayub:Salavdi1994@cluster0.qdi4tkn.mongodb.net/ph
 
 
 app.listen(PORT, () => {
-    console.log(`${PORT} get started success`)
+    console.log(`PORT ${PORT} get started success`)
 })

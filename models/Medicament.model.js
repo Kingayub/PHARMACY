@@ -3,7 +3,7 @@ const mongoose = require('mongoose')
 const MedicamentSchema = mongoose.Schema({
     name: String,
     description: String,
-    price:Number,
+    price: Number,
     saleWithoutRecipe: Boolean,
     categoryName: {
         type: mongoose.Schema.Types.ObjectId,
