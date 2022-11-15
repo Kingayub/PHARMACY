@@ -9,6 +9,9 @@ route.delete('/users/:id', usersController.deleteUser)
 route.patch('/users/:id', usersController.updateUser)
 route.patch('/users/cash/:cashId', usersController.addCash)
 route.patch('/users/addbascket/:userId', usersController.addMedicsInBascket)
+route.patch('/users/deletebascket/:userId', usersController.deleteMedicsInBascket)
+route.patch('/users/clearbascket/:userId', usersController.clearBascket)
+route.patch('/users/bayfrombascket/:userId', usersController.bayDrugsFromBascket)
 
 
 module.exports = route

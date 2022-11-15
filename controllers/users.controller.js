@@ -106,7 +106,7 @@ module.exports.usersController = {
         }
     },
     //ПОКУПАТЬ ЛЕКАРСТВА ИЗ КОРЗИНЫ
-    byDrugsFromBascket: async(req,res)=> {
+    bayDrugsFromBascket: async (req, res) => {
         const user = await User.findById(req.params.userId)
         const drug = await Medicament.findById(req.body.drug)
         //НУЖНО УБРАТЬ ИЗ КОРЗИНЫ КУПЛЕННЫЙ ТОВАР
