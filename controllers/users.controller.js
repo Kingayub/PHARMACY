@@ -1,5 +1,7 @@
 const User = require('../models/User.model')
 const Medicament = require('../models/Medicament.model')
+const { populate } = require('../models/User.model')
+const { path } = require('express/lib/application')
 
 module.exports.usersController = {
 
@@ -53,15 +55,15 @@ module.exports.usersController = {
     addMedicsInBascket: async (req, res) => {
         try {
             const user = await User.findById(req.params.userId)
-            const medicaments = await Medicament.findById(req.body.medicament)
-            if (!medicaments.saleWithoutRecipe) {
+            const drug = await Medicament.findById(req.body.drug)
+            if (!drug.saleWithoutRecipe) {
                 return res.json("Данное лекарство не продается без рецепта")
             }
             await User.findByIdAndUpdate(req.params.id, {
-                $addToSet: { medicaments: medicaments }
-            }, { new: true })
+                $addToSet: { medicaments: drug }
+            }, { new: true }).populate({ path: "bascket.medicaments" })
             // let defaultTotal = await user.bascket.totalPrice
-            let endTotal = await medicaments.reduce((acc, med) => {
+            let endTotal = await user.bascket.medicaments.reduce((acc, med) => {
                 acc += med.price
             }, 0)
             // defaultTotal = endTotal
@@ -69,7 +71,48 @@ module.exports.usersController = {
             // ПОЧЕМУ НЕЛЬЗЯ СТАВИТЬ await ПЕРЕД ПЕРЕЗАПИСЫВАНИЕМ
             res.json("Лекарство добавлено в корзину")
         } catch (error) {
-            res.json(error.message)
+            res.json(error)
         }
+    },
+    //УДАЛЕНИЕ ЛЕКАРСТВА ИЗ КОРЗИНЫ
+    deleteMedicsInBascket: async (req, res) => {
+        try {
+            const user = await User.findById(req.params.userId)
+            const drug = await Medicament.findById(req.body.drug)
+            await User.findByIdAndUpdate(req.params.id, {
+                $pull: { medicaments: drug }
+            }, { new: true }).populate({ path: "bascket.medicaments" })
+            // let defaultTotal = await user.bascket.totalPrice
+            let endTotal = await user.bascket.medicaments.reduce((acc, med) => {
+                acc += med.price
+            }, 0)
+            // defaultTotal = endTotal
+            user.bascket.totalPrice = endTotal
+            // ПОЧЕМУ НЕЛЬЗЯ СТАВИТЬ await ПЕРЕД ПЕРЕЗАПИСЫВАНИЕМ
+            res.json("Лекарство удалено из корзины")
+        } catch (error) {
+            res.json(error)
+        }
+    },
+    //ОЧИЩЕНИЕ КОРЗИНЫ
+    clearBascket: async (req, res) => {
+        try {
+            await User.findByIdAndUpdate(req.params.id, {
+                $set: { medicaments: [] }
+            }, { new: true })
+            res.json("ВАША КОРЗИНА ПУСТА")
+        } catch (error) {
+            res.json(error)
+        }
+    },
+    //ПОКУПАТЬ ЛЕКАРСТВА ИЗ КОРЗИНЫ
+    byDrugsFromBascket: async(req,res)=> {
+        const user = await User.findById(req.params.userId)
+        const drug = await Medicament.findById(req.body.drug)
+        //НУЖНО УБРАТЬ ИЗ КОРЗИНЫ КУПЛЕННЫЙ ТОВАР
+        //МИНУСОВАТЬ СУММУ КУПЛЕННОГО ТОВАРА ИЗ ОБЩЕЙ СУММЫ ЮЗЕРА
+        //ВЕРНУТЬ ТОВАР УСПЕШНО ОТПРАВЛЕН ВАМ ПО ПОЧТЕ
     }
+
+
 }
