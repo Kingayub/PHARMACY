@@ -1,7 +1,5 @@
 const User = require('../models/User.model')
 const Medicament = require('../models/Medicament.model')
-const { populate } = require('../models/User.model')
-const { path } = require('express/lib/application')
 
 module.exports.usersController = {
 
@@ -59,27 +57,12 @@ module.exports.usersController = {
             if (!drug.saleWithoutRecipe) {
                 return res.json("ДАННОЕ ЛЕКАРСТВО НЕ ПРОДАЕТСЯ БЕЗ РЕЦЕПТА")
             }
+            let summ = user.totalPrice + drug.price
             await User.findByIdAndUpdate(req.params.userId, {
-                $addToSet: { bascket: drug }
-            }, { new: true }).populate('bascket')
-
-            // const a = await User.findByIdAndUpdate(req.params.userId, {
-            //     $set: {
-            //         totalPrice: bascket.reduce((acc, item) => {
-            //             return acc + item.price
-            //         })
-            //     }
-            // }, { new: true }
-            // )
-            // console.log(a)
-
-            user.totalPrice = await user.bascket.reduce((acc, item) => {
-                acc + item.price
-            }, 0)
-            console.log(user.totalPrice)
-            // user.totalPrice = endTotal
-            // ПОЧЕМУ НЕЛЬЗЯ СТАВИТЬ await ПЕРЕД ПЕРЕЗАПИСЫВАНИЕМ
-            await res.json("ЛЕКАРСТВО ДОБАВЛЕНО В КОРЗИНУ")
+                $addToSet: { bascket: drug },
+                $set: { totalPrice: summ }
+            })
+            await res.json("ЛЕАКАРСТВО ДОБАВЛЕНО В КОРЗИНУ")
         } catch (error) {
             res.json(error)
         }
@@ -87,19 +70,15 @@ module.exports.usersController = {
     //УДАЛЕНИЕ ЛЕКАРСТВА ИЗ КОРЗИНЫ
     deleteMedicsInBascket: async (req, res) => {
         try {
-            const user = await User.findById(req.params.userId)
+            const user = await User.findById(req.params.userId).populate('bascket')
             const drug = await Medicament.findById(req.body.drug)
-            await User.findByIdAndUpdate(req.params.id, {
-                $pull: { medicaments: drug }
-            }, { new: true }).populate({ path: "bascket.medicaments" })
-            // let defaultTotal = await user.bascket.totalPrice
-            let endTotal = await user.bascket.medicaments.reduce((acc, med) => {
-                acc += med.price
-            }, 0)
-            // defaultTotal = endTotal
-            user.bascket.totalPrice = endTotal
-            // ПОЧЕМУ НЕЛЬЗЯ СТАВИТЬ await ПЕРЕД ПЕРЕЗАПИСЫВАНИЕМ
-            res.json("Лекарство удалено из корзины")
+            let summ1 = user.totalPrice - drug.price
+            console.log(summ1)
+            await User.findByIdAndUpdate(req.params.userId, {
+                $pull: { bascket: req.body.drug },
+                $set: { totalPrice: summ1 }
+            }, { new: true })
+            res.json("ЛЕКАРСТВО УДАЛЕНО ИЗ КОРЗИНЫ")
         } catch (error) {
             res.json(error)
         }
@@ -107,8 +86,9 @@ module.exports.usersController = {
     //ОЧИЩЕНИЕ КОРЗИНЫ
     clearBascket: async (req, res) => {
         try {
-            await User.findByIdAndUpdate(req.params.id, {
-                $set: { medicaments: [] }
+            await User.findByIdAndUpdate(req.params.userId, {
+                $pull: { bascket: req.body.drug },
+                $set: { totalPrice: 0 }
             }, { new: true })
             res.json("ВАША КОРЗИНА ПУСТА")
         } catch (error) {
@@ -118,10 +98,19 @@ module.exports.usersController = {
     //ПОКУПАТЬ ЛЕКАРСТВА ИЗ КОРЗИНЫ
     bayDrugsFromBascket: async (req, res) => {
         const user = await User.findById(req.params.userId)
-        const drug = await Medicament.findById(req.body.drug)
-        //НУЖНО УБРАТЬ ИЗ КОРЗИНЫ КУПЛЕННЫЙ ТОВАР
-        //МИНУСОВАТЬ СУММУ КУПЛЕННОГО ТОВАРА ИЗ ОБЩЕЙ СУММЫ ЮЗЕРА
-        //ВЕРНУТЬ ТОВАР УСПЕШНО ОТПРАВЛЕН ВАМ ПО ПОЧТЕ
+        // const drug = await Medicament.findById(req.body.drug)
+        if (user.cash < user.totalPrice) {
+            return res.json("НА ВАШЕМ СЧЕТЕ НЕДОСТАТОЧНО СРЕДСТВ")
+        }
+        let outputCash = user.cash - user.totalPrice
+        await User.findByIdAndUpdate(req.params.userId, {
+            $set: {
+                cash: outputCash,
+                totalPrice: 0,
+                bascket: []
+            }
+        }, { new: true })
+        await res.json(`ЛЕКАРСТВА ПРИОБРЕТЕНЫ! НА ВАШЕМ СЧЕТЕ ОСТАЛОСЬ ${outputCash} РУБЛЕЙ`)
     }
 
 
